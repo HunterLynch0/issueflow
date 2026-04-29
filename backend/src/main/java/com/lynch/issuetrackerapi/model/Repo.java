@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Entity
-public class RepositoryModel {
+public class Repo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

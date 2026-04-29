@@ -25,7 +25,7 @@ public class Issue {
     private LocalDateTime createdAt;
 
     @ManyToOne
-    private RepositoryModel repositoryModel;
+    private Repo repo;
 
     @ManyToOne
     private User assignee;
