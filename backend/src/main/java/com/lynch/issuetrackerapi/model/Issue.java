@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Entity
+@Table(name = "issues")
 public class Issue {
 
     @Id
@@ -18,7 +19,7 @@ public class Issue {
     private long id;
 
     private String title;
-    private String desc;
+    private String description;
 
     private String status;
 

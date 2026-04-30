@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Entity
+@Table(name = "repositories")
 public class Repo {
 
     @Id
@@ -18,7 +19,7 @@ public class Repo {
     private long id;
 
     private String name;
-    private String desc;
+    private String description;
 
     private LocalDateTime createdAt;
 
