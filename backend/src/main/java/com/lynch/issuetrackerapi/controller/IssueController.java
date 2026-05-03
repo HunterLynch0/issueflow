@@ -1,0 +1,56 @@
+package com.lynch.issuetrackerapi.controller;
+
+import com.lynch.issuetrackerapi.model.Issue;
+import com.lynch.issuetrackerapi.model.Repo;
+import com.lynch.issuetrackerapi.model.User;
+import com.lynch.issuetrackerapi.repository.IssueRepository;
+import com.lynch.issuetrackerapi.repository.RepoRepository;
+import com.lynch.issuetrackerapi.repository.UserRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api")
+public class IssueController {
+
+    private final IssueRepository issueRepository;
+    private final RepoRepository repoRepository;
+    private final UserRepository userRepository;
+
+    public IssueController(IssueRepository issueRepository, RepoRepository repoRepository, UserRepository userRepository) {
+        this.issueRepository = issueRepository;
+        this.repoRepository = repoRepository;
+        this.userRepository = userRepository;
+    }
+
+    @PostMapping("/repositories/{repoId}/issues")
+    public Issue createIssue(@PathVariable Long repoId, @RequestBody Issue issue) {
+        Repo repo = repoRepository.findById(repoId).orElseThrow(() -> new RuntimeException("Repository not found"));
+
+        issue.setRepo(repo);
+        issue.setCreatedAt(LocalDateTime.now());
+        if(issue.getStatus() == null) {
+            issue.setStatus("OPEN");
+        }
+
+        return issueRepository.save(issue);
+    }
+
+    @GetMapping("/repositories/{repoId}/issues")
+    public List<Issue> getIssuesByRepository(@PathVariable Long repoId) {
+        return issueRepository.findByRepoId(repoId);
+    }
+
+    @PatchMapping("/issues/{issueId}/assign/{userId}")
+    public Issue assignUser(@PathVariable Long issueId, @PathVariable Long userId) {
+
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        issue.setAssignee(user);
+
+        return issueRepository.save(issue);
+    }
+}
