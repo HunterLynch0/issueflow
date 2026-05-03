@@ -53,4 +53,22 @@ public class IssueController {
 
         return issueRepository.save(issue);
     }
+
+    @PatchMapping("/issues/{issueId}/close")
+    public Issue closeIssue(@PathVariable Long issueId) {
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found."));
+
+        issue.setStatus("CLOSED");
+
+        return issueRepository.save(issue);
+    }
+
+    @PatchMapping("/issues/{issueId}/reopen")
+    public Issue reopenIssue(@PathVariable Long issueId) {
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found."));
+
+        issue.setStatus("OPEN");
+
+        return issueRepository.save(issue);
+    }
 }
