@@ -47,6 +47,11 @@ public class IssueController {
         return issueRepository.findByRepoId(repoId);
     }
 
+    @GetMapping("/issues/{id}")
+    public Issue getIssue(@PathVariable Long id) {
+        return issueRepository.findById(id).orElseThrow(() -> new RuntimeException("Issue not found"));
+    }
+
     @PatchMapping("/issues/{issueId}/assign/{userId}")
     public Issue assignUser(@PathVariable Long issueId, @PathVariable Long userId) {
 
