@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.controller;
 
+import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.User;
 import com.lynch.issuetrackerapi.repository.IssueRepository;
@@ -30,7 +31,7 @@ public class UserController {
 
     @GetMapping("/users/{id}")
     public User getIssue(@PathVariable Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
 }

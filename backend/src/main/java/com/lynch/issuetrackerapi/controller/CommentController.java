@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.controller;
 
+import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.Comment;
 import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.repository.CommentRepository;
@@ -24,7 +25,7 @@ public class CommentController {
 
     @PostMapping("/issues/{issueId}/comments")
     public Comment createComment(@PathVariable Long issueId, @RequestBody Comment comment) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found"));
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         comment.setIssue(issue);
         comment.setCreatedAt(LocalDateTime.now());

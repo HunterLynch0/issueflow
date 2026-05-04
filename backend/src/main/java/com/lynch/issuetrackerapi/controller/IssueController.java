@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.controller;
 
+import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.Repo;
 import com.lynch.issuetrackerapi.model.User;
@@ -49,14 +50,14 @@ public class IssueController {
 
     @GetMapping("/issues/{id}")
     public Issue getIssue(@PathVariable Long id) {
-        return issueRepository.findById(id).orElseThrow(() -> new RuntimeException("Issue not found"));
+        return issueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
     }
 
     @PatchMapping("/issues/{issueId}/assign/{userId}")
     public Issue assignUser(@PathVariable Long issueId, @PathVariable Long userId) {
 
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found"));
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         issue.setAssignee(user);
 
@@ -65,7 +66,7 @@ public class IssueController {
 
     @PatchMapping("/issues/{issueId}/close")
     public Issue closeIssue(@PathVariable Long issueId) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found."));
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found."));
 
         issue.setStatus("CLOSED");
 
@@ -74,7 +75,7 @@ public class IssueController {
 
     @PatchMapping("/issues/{issueId}/reopen")
     public Issue reopenIssue(@PathVariable Long issueId) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new RuntimeException("Issue not found."));
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found."));
 
         issue.setStatus("OPEN");
 

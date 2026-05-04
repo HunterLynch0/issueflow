@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.controller;
 
+import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.Repo;
 import com.lynch.issuetrackerapi.repository.RepoRepository;
@@ -31,7 +32,7 @@ public class RepoController {
 
     @GetMapping("/repositories/{id}")
     public Repo getIssue(@PathVariable Long id) {
-        return repoRepository.findById(id).orElseThrow(() -> new RuntimeException("Repository not found"));
+        return repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
     }
 
 }
