@@ -39,7 +39,11 @@ public class IssueController {
     }
 
     @GetMapping("/repositories/{repoId}/issues")
-    public List<Issue> getIssuesByRepository(@PathVariable Long repoId) {
+    public List<Issue> getIssuesByRepository(@PathVariable Long repoId, @RequestParam(required = false) String status) {
+        if(status != null) {
+            return issueRepository.findByRepoIdAndStatus(repoId, status);
+        }
+
         return issueRepository.findByRepoId(repoId);
     }
 
