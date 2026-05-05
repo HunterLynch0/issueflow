@@ -2,11 +2,9 @@ package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.dto.LoginRequest;
 import com.lynch.issuetrackerapi.dto.RegisterRequest;
-import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.User;
-import com.lynch.issuetrackerapi.repository.RepoRepository;
 import com.lynch.issuetrackerapi.repository.UserRepository;
-import org.springframework.security.core.parameters.P;
+import com.lynch.issuetrackerapi.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,12 +17,12 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RepoRepository repoRepository;
+    private final JwtService jwtService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, RepoRepository repoRepository) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.repoRepository = repoRepository;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
@@ -47,6 +45,6 @@ public class AuthController {
             throw new RuntimeException("Invalid email or password");
         }
 
-        return "Login successful";
+        return jwtService.generateToken(user.getEmail());
     }
 }
