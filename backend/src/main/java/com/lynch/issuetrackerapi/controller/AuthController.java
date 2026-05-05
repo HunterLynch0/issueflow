@@ -2,14 +2,13 @@ package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.dto.LoginRequest;
 import com.lynch.issuetrackerapi.dto.RegisterRequest;
+import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.User;
 import com.lynch.issuetrackerapi.repository.UserRepository;
 import com.lynch.issuetrackerapi.security.JwtService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -46,5 +45,12 @@ public class AuthController {
         }
 
         return jwtService.generateToken(user.getEmail());
+    }
+
+    @GetMapping("/me")
+    public User me() {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }
