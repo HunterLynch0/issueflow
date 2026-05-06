@@ -1,38 +1,51 @@
 import { useState } from "react";
 import { apiFetch, saveAuth } from "../api/api";
 
-export default function AuthPage({ onLogin }) {
+export default function AuthPage({ onLogin, initialError = "" }) {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(false);
 
   const isRegister = mode === "register";
 
+  function clearMessages() {
+    setMessage("");
+    setError("");
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
+    clearMessages();
     setLoading(true);
 
     try {
       if (isRegister) {
         await apiFetch("/api/auth/register", {
           method: "POST",
-          body: JSON.stringify({ username, email, password }),
+          auth: false,
+          body: { username: username.trim(), email: email.trim(), password },
         });
+
+        setMode("login");
+        setPassword("");
+        setMessage("Account created. Log in with your new details.");
+        return;
       }
 
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        auth: false,
+        body: { email: email.trim(), password },
       });
 
       saveAuth(data.token, data.email);
       onLogin();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -41,40 +54,74 @@ export default function AuthPage({ onLogin }) {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <div className="brand-block">
-          <div className="logo-mark">IF</div>
-          <div>
-            <h1>IssueFlow</h1>
-            <p>Track repositories, issues, and comments in one clean workspace.</p>
-          </div>
+        <div className="auth-hero">
+          <div className="logo-mark auth-logo">IF</div>
+          <h1>IssueFlow</h1>
+          <p>Track repositories, issues, assignments, statuses, and comments in one clean place.</p>
         </div>
 
-        <div className="auth-tabs">
-          <button className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Login</button>
-          <button className={mode === "register" ? "active" : ""} onClick={() => setMode("register")}>Register</button>
+        <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
+          <button
+            type="button"
+            className={mode === "login" ? "active" : ""}
+            onClick={() => {
+              setMode("login");
+              clearMessages();
+            }}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            className={mode === "register" ? "active" : ""}
+            onClick={() => {
+              setMode("register");
+              clearMessages();
+            }}
+          >
+            Register
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="form-stack">
+        <form className="form-stack" onSubmit={handleSubmit}>
           {isRegister && (
-            <label>
-              Username
-              <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="hunter" required />
+            <label className="field">
+              <span>Username</span>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="hunter"
+                required
+              />
             </label>
           )}
 
-          <label>
-            Email
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hunter@test.com" type="email" required />
+          <label className="field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="hunter@test.com"
+              required
+            />
           </label>
 
-          <label>
-            Password
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" type="password" required />
+          <label className="field">
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
           </label>
 
-          {error && <p className="error-message">{error}</p>}
+          {message && <p className="page-alert page-alert-success">{message}</p>}
+          {error && <p className="page-alert page-alert-error">{error}</p>}
 
-          <button className="primary-btn" disabled={loading} type="submit">
+          <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
             {loading ? "Please wait..." : isRegister ? "Create account" : "Login"}
           </button>
         </form>

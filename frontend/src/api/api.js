@@ -1,35 +1,63 @@
 const API_BASE_URL = "http://localhost:8080";
 
+function buildUrl(path) {
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export async function apiFetch(path, options = {}) {
+  const { auth = true, body, headers = {}, ...rest } = options;
   const token = localStorage.getItem("token");
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  const requestHeaders = {
+    Accept: "application/json",
+    ...headers,
+  };
 
-  if (response.status === 204) {
-    return null;
+  let requestBody = body;
+
+  if (body !== undefined && body !== null && !(body instanceof FormData)) {
+    requestHeaders["Content-Type"] = "application/json";
+    if (typeof body !== "string") {
+      requestBody = JSON.stringify(body);
+    }
   }
 
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  if (auth && token) {
+    requestHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  let response;
+  try {
+    response = await fetch(buildUrl(path), {
+      ...rest,
+      headers: requestHeaders,
+      body: requestBody,
+    });
+  } catch (error) {
+    throw new Error("Could not reach backend. Make sure Spring Boot is running and CORS allows the frontend.");
+  }
+
+  if (response.status === 204) return null;
+
+  const contentType = response.headers.get("content-type") || "";
+  const payload = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
 
   if (!response.ok) {
-    const message = data?.message || data?.error || `Request failed with status ${response.status}`;
+    const message =
+      typeof payload === "string"
+        ? payload
+        : payload?.message || payload?.error || `Request failed with status ${response.status}`;
     throw new Error(message);
   }
 
-  return data;
+  return payload;
 }
 
 export function saveAuth(token, email) {
   localStorage.setItem("token", token);
-  localStorage.setItem("email", email);
+  localStorage.setItem("email", email || "");
 }
 
 export function clearAuth() {

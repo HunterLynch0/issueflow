@@ -5,14 +5,23 @@ export default function RepositoriesPage({ onOpenRepo }) {
   const [repos, setRepos] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   async function loadRepos() {
     try {
+      setError("");
+      setLoading(true);
       const data = await apiFetch("/api/repositories");
-      setRepos(data);
+      setRepos(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Could not load repositories.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -22,63 +31,149 @@ export default function RepositoriesPage({ onOpenRepo }) {
 
   async function createRepo(event) {
     event.preventDefault();
-    setError("");
+    if (!name.trim()) return;
 
     try {
+      setSaving(true);
       await apiFetch("/api/repositories", {
         method: "POST",
-        body: JSON.stringify({ name, description }),
+        body: { name: name.trim(), description: description.trim() },
       });
       setName("");
       setDescription("");
-      loadRepos();
+      await loadRepos();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Could not create repository.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(repo) {
+    setEditingId(repo.id);
+    setEditName(repo.name || "");
+    setEditDescription(repo.description || "");
+  }
+
+  async function saveEdit(repoId) {
+    if (!editName.trim()) return;
+
+    try {
+      setSaving(true);
+      await apiFetch(`/api/repositories/${repoId}`, {
+        method: "PATCH",
+        body: { name: editName.trim(), description: editDescription.trim() },
+      });
+      setEditingId(null);
+      await loadRepos();
+    } catch (err) {
+      setError(err.message || "Could not save repository.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteRepo(repo) {
+    if (!confirm(`Delete repository "${repo.name}"? This may also delete its issues.`)) return;
+
+    try {
+      await apiFetch(`/api/repositories/${repo.id}`, { method: "DELETE" });
+      await loadRepos();
+    } catch (err) {
+      setError(err.message || "Could not delete repository.");
     }
   }
 
   return (
-    <div className="page-grid">
-      <section className="panel main-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Repositories</p>
-            <h2>Your repositories</h2>
-          </div>
-          <span className="count-pill">{repos.length}</span>
+    <section className="page-panel">
+      <div className="page-title-row">
+        <div>
+          <p className="eyebrow">Dashboard</p>
+          <h1>Repositories</h1>
+          <p className="muted">Create a repository, then open it to add and manage issues.</p>
         </div>
+      </div>
 
-        {error && <p className="error-message">{error}</p>}
+      <form className="create-card repo-create-grid" onSubmit={createRepo}>
+        <label className="field">
+          <span>Repository name</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. issueflow"
+            required
+          />
+        </label>
 
-        <div className="card-list">
-          {repos.map((repo) => (
-            <button key={repo.id} className="repo-card" onClick={() => onOpenRepo(repo)}>
-              <div>
-                <h3>{repo.name}</h3>
-                <p>{repo.description || "No description"}</p>
+        <label className="field">
+          <span>Description</span>
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Short project description"
+          />
+        </label>
+
+        <button className="btn btn-primary" disabled={saving} type="submit">
+          {saving ? "Creating..." : "Create repo"}
+        </button>
+      </form>
+
+      {error && <p className="page-alert page-alert-error">{error}</p>}
+      {loading && <p className="empty-state">Loading repositories...</p>}
+
+      {!loading && repos.length === 0 && (
+        <div className="empty-state">No repositories yet. Create your first one above.</div>
+      )}
+
+      <div className="card-grid">
+        {repos.map((repo) => (
+          <article className="data-card" key={repo.id}>
+            {editingId === repo.id ? (
+              <div className="form-stack compact">
+                <label className="field">
+                  <span>Name</span>
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                </label>
+                <label className="field">
+                  <span>Description</span>
+                  <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                </label>
+                <div className="button-row">
+                  <button type="button" className="btn btn-primary" onClick={() => saveEdit(repo.id)}>
+                    Save
+                  </button>
+                  <button type="button" className="btn btn-soft" onClick={() => setEditingId(null)}>
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <span>Open →</span>
-            </button>
-          ))}
+            ) : (
+              <>
+                <div className="card-main">
+                  <div className="repo-icon">{(repo.name || "R").slice(0, 1).toUpperCase()}</div>
+                  <div>
+                    <h2>{repo.name}</h2>
+                    <p>{repo.description || "No description yet."}</p>
+                  </div>
+                </div>
 
-          {repos.length === 0 && <p className="empty-state">No repositories yet. Create your first one.</p>}
-        </div>
-      </section>
-
-      <aside className="panel side-panel">
-        <h3>Create repository</h3>
-        <form onSubmit={createRepo} className="form-stack">
-          <label>
-            Name
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="versionhandle" required />
-          </label>
-          <label>
-            Description
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A lightweight Git-like VCS" />
-          </label>
-          <button className="primary-btn" type="submit">Create repo</button>
-        </form>
-      </aside>
-    </div>
+                <div className="button-row wrap">
+                  <button type="button" className="btn btn-primary" onClick={() => onOpenRepo(repo)}>
+                    Open issues
+                  </button>
+                  <button type="button" className="btn btn-soft" onClick={() => startEdit(repo)}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn btn-danger" onClick={() => deleteRepo(repo)}>
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }

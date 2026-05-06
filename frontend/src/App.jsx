@@ -1,86 +1,135 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiFetch, clearAuth, isLoggedIn } from "./api/api";
 import AuthPage from "./pages/AuthPage";
 import RepositoriesPage from "./pages/RepositoriesPage";
 import IssuesPage from "./pages/IssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
-import "./App.css";
+
+function parseRoute() {
+  const path = window.location.pathname;
+
+  if (path === "/" || path === "/login" || path === "/repositories") {
+    return { page: "repositories" };
+  }
+
+  const repoIssuesMatch = path.match(/^\/repositories\/(\d+)\/issues$/);
+  if (repoIssuesMatch) {
+    return { page: "issues", repoId: Number(repoIssuesMatch[1]) };
+  }
+
+  const issueMatch = path.match(/^\/issues\/(\d+)$/);
+  if (issueMatch) {
+    return { page: "issueDetail", issueId: Number(issueMatch[1]) };
+  }
+
+  return { page: "repositories" };
+}
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(isLoggedIn());
   const [currentUser, setCurrentUser] = useState(null);
-  const [view, setView] = useState("repositories");
-  const [selectedRepo, setSelectedRepo] = useState(null);
-  const [selectedIssueId, setSelectedIssueId] = useState(null);
+  const [route, setRoute] = useState(parseRoute());
+  const [appError, setAppError] = useState("");
 
-  async function loadMe() {
+  const navigate = useCallback((path) => {
+    window.history.pushState({}, "", path);
+    setRoute(parseRoute());
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const replace = useCallback((path) => {
+    window.history.replaceState({}, "", path);
+    setRoute(parseRoute());
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setRoute(parseRoute());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const loadMe = useCallback(async () => {
     if (!isLoggedIn()) return;
 
     try {
+      setAppError("");
       const user = await apiFetch("/api/me");
       setCurrentUser(user);
-    } catch {
+    } catch (err) {
       clearAuth();
       setAuthenticated(false);
       setCurrentUser(null);
+      setAppError(err.message || "Your session expired. Please log in again.");
+      replace("/login");
     }
-  }
+  }, [replace]);
 
   useEffect(() => {
+    if (!authenticated) return;
     loadMe();
-  }, [authenticated]);
+
+    if (window.location.pathname === "/" || window.location.pathname === "/login") {
+      replace("/repositories");
+    }
+  }, [authenticated, loadMe, replace]);
+
+  function handleLogin() {
+    setAuthenticated(true);
+    replace("/repositories");
+  }
 
   function handleLogout() {
     clearAuth();
     setAuthenticated(false);
     setCurrentUser(null);
-    setSelectedRepo(null);
-    setSelectedIssueId(null);
-    setView("repositories");
+    replace("/login");
   }
 
   if (!authenticated) {
-    return <AuthPage onLogin={() => setAuthenticated(true)} />;
+    return <AuthPage onLogin={handleLogin} initialError={appError} />;
   }
 
   return (
     <div className="app-shell">
       <header className="top-bar">
-        <div className="brand-row">
-          <div className="logo-mark small">IF</div>
-          <div>
-            <h1>IssueFlow</h1>
-            <p>{currentUser ? `Signed in as ${currentUser.email}` : "Loading user..."}</p>
-          </div>
-        </div>
-        <button className="secondary-btn" onClick={handleLogout}>Logout</button>
+        <button
+          type="button"
+          className="brand-button"
+          onClick={() => navigate("/repositories")}
+          aria-label="Go to repositories"
+        >
+          <span className="logo-mark">IF</span>
+          <span className="brand-copy">
+            <strong>IssueFlow</strong>
+            <small>{currentUser ? currentUser.email : "Loading account..."}</small>
+          </span>
+        </button>
+
+        <button type="button" className="btn btn-soft" onClick={handleLogout}>
+          Logout
+        </button>
       </header>
 
+      {appError && <div className="page-alert page-alert-error">{appError}</div>}
+
       <main className="content-wrap">
-        {view === "repositories" && (
-          <RepositoriesPage
-            onOpenRepo={(repo) => {
-              setSelectedRepo(repo);
-              setView("issues");
-            }}
-          />
+        {route.page === "repositories" && (
+          <RepositoriesPage onOpenRepo={(repo) => navigate(`/repositories/${repo.id}/issues`)} />
         )}
 
-        {view === "issues" && selectedRepo && (
+        {route.page === "issues" && route.repoId && (
           <IssuesPage
-            repo={selectedRepo}
-            onBack={() => setView("repositories")}
-            onOpenIssue={(issueId) => {
-              setSelectedIssueId(issueId);
-              setView("issueDetail");
-            }}
+            repoId={route.repoId}
+            onBack={() => navigate("/repositories")}
+            onOpenIssue={(issue) => navigate(`/issues/${issue.id}`)}
           />
         )}
 
-        {view === "issueDetail" && selectedIssueId && (
+        {route.page === "issueDetail" && route.issueId && (
           <IssueDetailPage
-            issueId={selectedIssueId}
-            onBack={() => setView("issues")}
+            issueId={route.issueId}
+            onBack={() => window.history.back()}
+            onRepoLink={(repoId) => navigate(`/repositories/${repoId}/issues`)}
           />
         )}
       </main>

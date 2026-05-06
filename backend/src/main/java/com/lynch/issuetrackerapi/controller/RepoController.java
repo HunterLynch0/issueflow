@@ -35,4 +35,26 @@ public class RepoController {
         return repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
     }
 
+    @PatchMapping("/{id}")
+    public Repo updateRepo(@PathVariable Long id, @RequestBody Repo updatedRepo) {
+        Repo repo = repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+
+        if (updatedRepo.getName() != null) {
+            repo.setName(updatedRepo.getName());
+        }
+
+        if (updatedRepo.getDescription() != null) {
+            repo.setDescription(updatedRepo.getDescription());
+        }
+
+        return repoRepository.save(repo);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteRepo(@PathVariable Long id) {
+        Repo repo = repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+
+        repoRepository.delete(repo);
+    }
+
 }

@@ -37,4 +37,22 @@ public class CommentController {
     public List<Comment> getComments(@PathVariable Long issueId) {
         return commentRepository.findByIssueId(issueId);
     }
+
+    @PatchMapping("/comments/{commentId}")
+    public Comment updateComment(@PathVariable Long commentId, @RequestBody Comment updatedComment) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+
+        if (updatedComment.getContent() != null) {
+            comment.setContent(updatedComment.getContent());
+        }
+
+        return commentRepository.save(comment);
+    }
+
+    @DeleteMapping("comments/{commentId}")
+    public void deleteComment(@PathVariable Long commentId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+
+        commentRepository.delete(comment);
+    }
 }

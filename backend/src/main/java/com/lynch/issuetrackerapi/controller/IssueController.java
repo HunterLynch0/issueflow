@@ -81,4 +81,30 @@ public class IssueController {
 
         return issueRepository.save(issue);
     }
+
+    @PatchMapping("/issues/{issueId}")
+    public Issue updateIssue(@PathVariable Long issueId, @RequestBody Issue updatedIssue) {
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+
+        if (updatedIssue.getTitle() != null) {
+            issue.setTitle(updatedIssue.getTitle());
+        }
+
+        if (updatedIssue.getDescription() != null) {
+            issue.setDescription(updatedIssue.getDescription());
+        }
+
+        if (updatedIssue.getStatus() != null) {
+            issue.setStatus(updatedIssue.getStatus());
+        }
+
+        return issueRepository.save(issue);
+    }
+
+    @DeleteMapping("/issues/{issueId}")
+    public void deleteIssue(@PathVariable Long issueId) {
+        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+
+        issueRepository.delete(issue);
+    }
 }
