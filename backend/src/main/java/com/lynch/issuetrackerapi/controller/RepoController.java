@@ -30,7 +30,7 @@ public class RepoController {
         return repoRepository.findAll();
     }
 
-    @GetMapping("/repositories/{id}")
+    @GetMapping("/{id}")
     public Repo getIssue(@PathVariable Long id) {
         return repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
     }

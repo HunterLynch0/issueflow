@@ -19,11 +19,6 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userRepository.save(user);
-    }
-
     @GetMapping
     public List<User> getUsers() {
         return userRepository.findAll();
