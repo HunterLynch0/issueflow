@@ -1,7 +1,5 @@
 package com.lynch.issuetrackerapi.security;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.controller;
 
+import com.lynch.issuetrackerapi.dto.AuthResponse;
 import com.lynch.issuetrackerapi.dto.LoginRequest;
 import com.lynch.issuetrackerapi.dto.RegisterRequest;
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
@@ -42,7 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
+    public AuthResponse login(@RequestBody LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
 
@@ -50,6 +51,8 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
 
-        return jwtService.generateToken(user.getEmail());
+        String token = jwtService.generateToken(user.getEmail());
+
+        return new AuthResponse(token, user.getEmail());
     }
 }
