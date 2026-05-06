@@ -31,7 +31,7 @@ public class RepoController {
     }
 
     @GetMapping("/{id}")
-    public Repo getIssue(@PathVariable Long id) {
+    public Repo getRepo(@PathVariable Long id) {
         return repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
     }
 

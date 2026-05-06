@@ -28,7 +28,7 @@ public class IssueController {
 
     @PostMapping("/repositories/{repoId}/issues")
     public Issue createIssue(@PathVariable Long repoId, @RequestBody Issue issue) {
-        Repo repo = repoRepository.findById(repoId).orElseThrow(() -> new RuntimeException("Repository not found"));
+        Repo repo = repoRepository.findById(repoId).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
 
         issue.setRepo(repo);
         issue.setCreatedAt(LocalDateTime.now());

@@ -1,9 +1,7 @@
 package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
-import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.User;
-import com.lynch.issuetrackerapi.repository.IssueRepository;
 import com.lynch.issuetrackerapi.repository.UserRepository;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +23,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public User getIssue(@PathVariable Long id) {
+    public User getUser(@PathVariable Long id) {
         return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
