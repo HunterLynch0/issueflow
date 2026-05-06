@@ -46,11 +46,4 @@ public class AuthController {
 
         return jwtService.generateToken(user.getEmail());
     }
-
-    @GetMapping("/me")
-    public User me() {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    }
 }
