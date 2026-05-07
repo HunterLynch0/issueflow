@@ -22,4 +22,7 @@ public class User {
 
     @JsonIgnore
     private String password;
+
+    private boolean emailVerified = false;
+    private String verificationToken;
 }

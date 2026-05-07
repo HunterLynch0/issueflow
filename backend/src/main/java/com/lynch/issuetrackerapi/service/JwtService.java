@@ -1,4 +1,4 @@
-package com.lynch.issuetrackerapi.security;
+package com.lynch.issuetrackerapi.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

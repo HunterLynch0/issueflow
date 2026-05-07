@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.security;
 
+import com.lynch.issuetrackerapi.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
