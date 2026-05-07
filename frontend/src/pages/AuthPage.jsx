@@ -90,7 +90,7 @@ export default function AuthPage({ onLogin, initialError = "" }) {
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="hunter"
+                placeholder="johndoe"
                 required
               />
             </label>
@@ -102,7 +102,7 @@ export default function AuthPage({ onLogin, initialError = "" }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="hunter@test.com"
+              placeholder="johndoe@example.com"
               required
             />
           </label>
