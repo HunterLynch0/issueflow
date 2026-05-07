@@ -7,6 +7,7 @@ import com.lynch.issuetrackerapi.model.User;
 import com.lynch.issuetrackerapi.repository.IssueRepository;
 import com.lynch.issuetrackerapi.repository.RepoRepository;
 import com.lynch.issuetrackerapi.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -26,9 +27,17 @@ public class IssueController {
         this.userRepository = userRepository;
     }
 
+    public User getCurrentUser() {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
     @PostMapping("/repositories/{repoId}/issues")
     public Issue createIssue(@PathVariable Long repoId, @RequestBody Issue issue) {
-        Repo repo = repoRepository.findById(repoId).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        User owner = getCurrentUser();
+
+        Repo repo = repoRepository.findByIdAndOwnerEmail(repoId, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
 
         issue.setRepo(repo);
         issue.setCreatedAt(LocalDateTime.now());
@@ -41,22 +50,27 @@ public class IssueController {
 
     @GetMapping("/repositories/{repoId}/issues")
     public List<Issue> getIssuesByRepository(@PathVariable Long repoId, @RequestParam(required = false) String status) {
+        User owner = getCurrentUser();
+
         if(status != null) {
-            return issueRepository.findByRepoIdAndStatus(repoId, status);
+            return issueRepository.findByRepoIdAndStatusAndRepoOwnerEmail(repoId, status, owner.getEmail());
         }
 
-        return issueRepository.findByRepoId(repoId);
+        return issueRepository.findByRepoIdAndRepoOwnerEmail(repoId, owner.getEmail());
     }
 
     @GetMapping("/issues/{id}")
     public Issue getIssue(@PathVariable Long id) {
-        return issueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        User owner = getCurrentUser();
+
+        return issueRepository.findByIdAndRepoOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
     }
 
     @PatchMapping("/issues/{issueId}/assign/{userId}")
     public Issue assignUser(@PathVariable Long issueId, @PathVariable Long userId) {
+        User owner = getCurrentUser();
 
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        Issue issue = issueRepository.findByIdAndRepoOwnerEmail(issueId, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
         User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         issue.setAssignee(user);
@@ -66,7 +80,9 @@ public class IssueController {
 
     @PatchMapping("/issues/{issueId}/close")
     public Issue closeIssue(@PathVariable Long issueId) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found."));
+        User owner = getCurrentUser();
+
+        Issue issue = issueRepository.findByIdAndRepoOwnerEmail(issueId, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Issue not found."));
 
         issue.setStatus("CLOSED");
 
@@ -75,7 +91,9 @@ public class IssueController {
 
     @PatchMapping("/issues/{issueId}/reopen")
     public Issue reopenIssue(@PathVariable Long issueId) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found."));
+        User owner = getCurrentUser();
+
+        Issue issue = issueRepository.findByIdAndRepoOwnerEmail(issueId, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Issue not found."));
 
         issue.setStatus("OPEN");
 
@@ -84,7 +102,9 @@ public class IssueController {
 
     @PatchMapping("/issues/{issueId}")
     public Issue updateIssue(@PathVariable Long issueId, @RequestBody Issue updatedIssue) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        User owner = getCurrentUser();
+
+        Issue issue = issueRepository.findByIdAndRepoOwnerEmail(issueId, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         if (updatedIssue.getTitle() != null) {
             issue.setTitle(updatedIssue.getTitle());
@@ -103,7 +123,9 @@ public class IssueController {
 
     @DeleteMapping("/issues/{issueId}")
     public void deleteIssue(@PathVariable Long issueId) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        User owner = getCurrentUser();
+
+        Issue issue = issueRepository.findByIdAndRepoOwnerEmail(issueId, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         issueRepository.delete(issue);
     }

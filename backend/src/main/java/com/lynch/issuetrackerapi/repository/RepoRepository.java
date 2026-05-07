@@ -4,9 +4,12 @@ import com.lynch.issuetrackerapi.model.Repo;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RepoRepository extends JpaRepository<Repo, Long> {
 
-    public List<Repo> findByOwnerEmail(String email);
+    Optional<Repo> findByIdAndOwnerEmail(Long id, String email);
+
+    List<Repo> findByOwnerEmail(String email);
 
 }

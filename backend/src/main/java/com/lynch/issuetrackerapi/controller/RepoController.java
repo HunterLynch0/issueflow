@@ -24,17 +24,16 @@ public class RepoController {
         this.userRepository = userRepository;
     }
 
-    @PostMapping
-    public Repo createRepository(@RequestBody Repo repo) {
-        repo.setCreatedAt(LocalDateTime.now());
-        return repoRepository.save(repo);
-    }
-
-    @GetMapping
     public User getCurrentUser() {
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @PostMapping
+    public Repo createRepository(@RequestBody Repo repo) {
+        repo.setCreatedAt(LocalDateTime.now());
+        return repoRepository.save(repo);
     }
 
     @GetMapping
@@ -45,12 +44,16 @@ public class RepoController {
 
     @GetMapping("/{id}")
     public Repo getRepo(@PathVariable Long id) {
-        return repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        User owner = getCurrentUser();
+
+        return repoRepository.findByIdAndOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
     }
 
     @PatchMapping("/{id}")
     public Repo updateRepo(@PathVariable Long id, @RequestBody Repo updatedRepo) {
-        Repo repo = repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        User owner = getCurrentUser();
+
+        Repo repo = repoRepository.findByIdAndOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
 
         if (updatedRepo.getName() != null) {
             repo.setName(updatedRepo.getName());
@@ -65,7 +68,9 @@ public class RepoController {
 
     @DeleteMapping("/{id}")
     public void deleteRepo(@PathVariable Long id) {
-        Repo repo = repoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        User owner = getCurrentUser();
+
+        Repo repo = repoRepository.findByIdAndOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
 
         repoRepository.delete(repo);
     }
