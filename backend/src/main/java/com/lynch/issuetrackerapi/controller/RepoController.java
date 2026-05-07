@@ -32,7 +32,11 @@ public class RepoController {
 
     @PostMapping
     public Repo createRepository(@RequestBody Repo repo) {
+        User owner = getCurrentUser();
+
+        repo.setOwner(owner);
         repo.setCreatedAt(LocalDateTime.now());
+
         return repoRepository.save(repo);
     }
 
