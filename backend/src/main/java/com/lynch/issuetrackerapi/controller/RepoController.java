@@ -3,7 +3,10 @@ package com.lynch.issuetrackerapi.controller;
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.Repo;
+import com.lynch.issuetrackerapi.model.User;
 import com.lynch.issuetrackerapi.repository.RepoRepository;
+import com.lynch.issuetrackerapi.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -14,9 +17,11 @@ import java.util.List;
 public class RepoController {
 
     private final RepoRepository repoRepository;
+    private final UserRepository userRepository;
 
-    public RepoController(RepoRepository repoRepository) {
+    public RepoController(RepoRepository repoRepository, UserRepository userRepository) {
         this.repoRepository = repoRepository;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -26,8 +31,16 @@ public class RepoController {
     }
 
     @GetMapping
+    public User getCurrentUser() {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    @GetMapping
     public List<Repo> getAllRepositories() {
-        return repoRepository.findAll();
+        User owner = getCurrentUser();
+        return repoRepository.findByOwnerEmail(owner.getEmail());
     }
 
     @GetMapping("/{id}")
