@@ -32,7 +32,7 @@ export default function AuthPage({ onLogin, initialError = "" }) {
 
         setMode("login");
         setPassword("");
-        setMessage("Account created. Log in with your new details.");
+        setMessage("Account created. Check your email for a verification link before logging in.");
         return;
       }
 

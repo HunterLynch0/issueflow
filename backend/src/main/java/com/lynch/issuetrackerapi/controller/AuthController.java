@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,9 +50,9 @@ public class AuthController {
         user.setEmailVerified(false);
         user.setVerificationToken(token);
 
-        userRepository.save(user);
-
         emailService.sendVerificationEmail(user.getEmail(), token);
+
+        userRepository.save(user);
 
         return ResponseEntity.ok("Account created. Check your email to verify you account.");
     }
@@ -90,6 +91,6 @@ public class AuthController {
 
         userRepository.save(user);
 
-        return ResponseEntity.ok("Email Verified");
+        return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
     }
 }

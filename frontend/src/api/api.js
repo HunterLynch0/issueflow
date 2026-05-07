@@ -40,9 +40,16 @@ export async function apiFetch(path, options = {}) {
   if (response.status === 204) return null;
 
   const contentType = response.headers.get("content-type") || "";
-  const payload = contentType.includes("application/json")
-    ? await response.json()
-    : await response.text();
+  const rawPayload = await response.text();
+
+  let payload = rawPayload;
+  if (contentType.includes("application/json") && rawPayload) {
+    try {
+      payload = JSON.parse(rawPayload);
+    } catch {
+      payload = rawPayload;
+    }
+  }
 
   if (!response.ok) {
     const message =

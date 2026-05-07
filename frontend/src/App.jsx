@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, clearAuth, isLoggedIn } from "./api/api";
 import AuthPage from "./pages/AuthPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import RepositoriesPage from "./pages/RepositoriesPage";
 import IssuesPage from "./pages/IssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
 
 function parseRoute() {
   const path = window.location.pathname;
+
+  if (path === "/verify-email") {
+    return { page: "verifyEmail" };
+  }
 
   if (path === "/" || path === "/login" || path === "/repositories") {
     return { page: "repositories" };
@@ -66,6 +71,7 @@ export default function App() {
 
   useEffect(() => {
     if (!authenticated) return;
+
     loadMe();
 
     if (window.location.pathname === "/" || window.location.pathname === "/login") {
@@ -86,6 +92,10 @@ export default function App() {
   }
 
   if (!authenticated) {
+    if (route.page === "verifyEmail") {
+      return <VerifyEmailPage onNavigateToLogin={() => navigate("/login")} />;
+    }
+
     return <AuthPage onLogin={handleLogin} initialError={appError} />;
   }
 
