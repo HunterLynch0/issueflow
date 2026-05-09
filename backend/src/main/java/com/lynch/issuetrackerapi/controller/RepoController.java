@@ -73,7 +73,7 @@ public class RepoController {
         return repoRepository.save(repo);
     }
 
-    @PostMapping("/{repoId}/members/")
+    @PostMapping("/{repoId}/members")
     public RepoMember addMemberByEmail(@PathVariable Long repoId, @RequestBody AddMemberRequest request) {
         User user = getCurrentUser();
 
