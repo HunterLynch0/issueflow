@@ -21,7 +21,4 @@ public class RepoMember {
 
     @ManyToOne
     private User user;
-
-    // Owner or Member
-    private String Role;
 }

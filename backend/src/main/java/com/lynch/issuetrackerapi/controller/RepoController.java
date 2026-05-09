@@ -1,14 +1,15 @@
 package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
-import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.Repo;
+import com.lynch.issuetrackerapi.model.RepoMember;
 import com.lynch.issuetrackerapi.model.User;
 import com.lynch.issuetrackerapi.repository.RepoMemberRepository;
 import com.lynch.issuetrackerapi.repository.RepoRepository;
 import com.lynch.issuetrackerapi.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -70,6 +71,29 @@ public class RepoController {
         repo.setCreatedAt(LocalDateTime.now());
 
         return repoRepository.save(repo);
+    }
+
+    @PostMapping("/{repoId}/members/{userId}")
+    public RepoMember addMember(@PathVariable Long repoId, @PathVariable Long userId) {
+        User user = getCurrentUser();
+
+        Repo repo = getOwnedRepo(repoId, user);
+
+        User userAdded = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if(repo.getOwner().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Owner is already in the repository");
+        }
+
+        if(repo.getOwner().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already a member");
+        }
+
+        RepoMember member = new RepoMember();
+        member.setRepo(repo);
+        member.setUser(userAdded);
+
+        return repoMemberRepository.save(member);
     }
 
     @GetMapping
