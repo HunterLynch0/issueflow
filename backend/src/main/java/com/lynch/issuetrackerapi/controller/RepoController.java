@@ -1,5 +1,6 @@
 package com.lynch.issuetrackerapi.controller;
 
+import com.lynch.issuetrackerapi.dto.AddMemberRequest;
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.Repo;
 import com.lynch.issuetrackerapi.model.RepoMember;
@@ -36,7 +37,7 @@ public class RepoController {
     }
 
     private boolean canAccessRepo(Repo repo, User user) {
-        boolean isOwner = repo.getOwner().getId().equals(user.getId());
+        boolean isOwner = repo.getOwner() != null && repo.getOwner().getId().equals(user.getId());
         boolean isMember = repoMemberRepository.existsByRepoAndUser(repo, user);
 
         return isOwner || isMember;
@@ -72,15 +73,15 @@ public class RepoController {
         return repoRepository.save(repo);
     }
 
-    @PostMapping("/{repoId}/members/{userId}")
-    public RepoMember addMember(@PathVariable Long repoId, @PathVariable Long userId) {
+    @PostMapping("/{repoId}/members/")
+    public RepoMember addMemberByEmail(@PathVariable Long repoId, @RequestBody AddMemberRequest request) {
         User user = getCurrentUser();
 
         Repo repo = getOwnedRepo(repoId, user);
 
-        User userAdded = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User userAdded = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if(repo.getOwner().getId().equals(userId)) {
+        if(repo.getOwner().getId().equals(userAdded.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Owner is already in the repository");
         }
 
