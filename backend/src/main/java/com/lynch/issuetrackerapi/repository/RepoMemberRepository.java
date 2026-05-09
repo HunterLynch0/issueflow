@@ -16,5 +16,5 @@ public interface RepoMemberRepository extends JpaRepository<RepoMember, Long> {
 
     Optional<RepoMember> findByRepoAndUser(Repo repo, User user);
 
-    List<RepoMember> findByRepoId(Long repoId);
+    List<RepoMember> findByRepo(Repo repo);
 }

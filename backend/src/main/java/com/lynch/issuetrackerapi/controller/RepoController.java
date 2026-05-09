@@ -124,6 +124,15 @@ public class RepoController {
         return getAccessibleRepo(id, user);
     }
 
+    @GetMapping("/{repoId}/members")
+    public List<RepoMember> getMembers(@PathVariable Long repoId) {
+        User user = getCurrentUser();
+
+        Repo repo = getAccessibleRepo(repoId, user);
+
+        return repoMemberRepository.findByRepo(repo);
+    }
+
     @PatchMapping("/{id}")
     public Repo updateRepo(@PathVariable Long id, @RequestBody Repo updatedRepo) {
         User owner = getCurrentUser();
