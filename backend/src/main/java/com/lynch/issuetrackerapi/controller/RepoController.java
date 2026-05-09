@@ -9,7 +9,6 @@ import com.lynch.issuetrackerapi.repository.RepoRepository;
 import com.lynch.issuetrackerapi.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -111,22 +110,25 @@ public class RepoController {
 
     @GetMapping
     public List<Repo> getAllRepositories() {
-        User owner = getCurrentUser();
-        return repoRepository.findByOwnerEmail(owner.getEmail());
+        User user = getCurrentUser();
+
+        List<Repo> repos = repoRepository.findAll();
+
+        return repos.stream().filter(repo -> canAccessRepo(repo, user)).toList();
     }
 
     @GetMapping("/{id}")
     public Repo getRepo(@PathVariable Long id) {
-        User owner = getCurrentUser();
+        User user = getCurrentUser();
 
-        return repoRepository.findByIdAndOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        return getAccessibleRepo(id, user);
     }
 
     @PatchMapping("/{id}")
     public Repo updateRepo(@PathVariable Long id, @RequestBody Repo updatedRepo) {
         User owner = getCurrentUser();
 
-        Repo repo = repoRepository.findByIdAndOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        Repo repo = getOwnedRepo(id, owner);
 
         if (updatedRepo.getName() != null) {
             repo.setName(updatedRepo.getName());
@@ -143,7 +145,7 @@ public class RepoController {
     public void deleteRepo(@PathVariable Long id) {
         User owner = getCurrentUser();
 
-        Repo repo = repoRepository.findByIdAndOwnerEmail(id, owner.getEmail()).orElseThrow(() -> new ResourceNotFoundException("Repository not found"));
+        Repo repo = getOwnedRepo(id, owner);
 
         repoRepository.delete(repo);
     }
