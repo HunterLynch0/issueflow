@@ -2,12 +2,8 @@ package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.dto.AddMemberRequest;
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
-import com.lynch.issuetrackerapi.model.Repo;
-import com.lynch.issuetrackerapi.model.RepoMember;
-import com.lynch.issuetrackerapi.model.User;
-import com.lynch.issuetrackerapi.repository.RepoMemberRepository;
-import com.lynch.issuetrackerapi.repository.RepoRepository;
-import com.lynch.issuetrackerapi.repository.UserRepository;
+import com.lynch.issuetrackerapi.model.*;
+import com.lynch.issuetrackerapi.repository.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +19,15 @@ public class RepoController {
     private final RepoRepository repoRepository;
     private final UserRepository userRepository;
     private final RepoMemberRepository repoMemberRepository;
+    private final IssueRepository issueRepository;
+    private final CommentRepository commentRepository;
 
-    public RepoController(RepoRepository repoRepository, UserRepository userRepository, RepoMemberRepository repoMemberRepository) {
+    public RepoController(RepoRepository repoRepository, UserRepository userRepository, RepoMemberRepository repoMemberRepository, IssueRepository issueRepository, CommentRepository commentRepository) {
         this.repoRepository = repoRepository;
         this.userRepository = userRepository;
         this.repoMemberRepository = repoMemberRepository;
+        this.issueRepository = issueRepository;
+        this.commentRepository = commentRepository;
     }
 
     public User getCurrentUser() {
@@ -156,6 +156,18 @@ public class RepoController {
         User owner = getCurrentUser();
 
         Repo repo = getOwnedRepo(id, owner);
+
+        List<Issue> issues = issueRepository.findByRepoId(repo.getId());
+
+        issues.forEach(issue -> {
+            List<Comment> comments = commentRepository.findByIssueId(issue.getId());
+            comments.forEach(commentRepository::delete);
+            issueRepository.delete(issue);
+        });
+
+        List<RepoMember> members = repoMemberRepository.findByRepo(repo);
+
+        members.forEach(repoMemberRepository::delete);
 
         repoRepository.delete(repo);
     }

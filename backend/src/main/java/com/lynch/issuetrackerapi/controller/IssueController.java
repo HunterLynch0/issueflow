@@ -1,13 +1,11 @@
 package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
+import com.lynch.issuetrackerapi.model.Comment;
 import com.lynch.issuetrackerapi.model.Issue;
 import com.lynch.issuetrackerapi.model.Repo;
 import com.lynch.issuetrackerapi.model.User;
-import com.lynch.issuetrackerapi.repository.IssueRepository;
-import com.lynch.issuetrackerapi.repository.RepoMemberRepository;
-import com.lynch.issuetrackerapi.repository.RepoRepository;
-import com.lynch.issuetrackerapi.repository.UserRepository;
+import com.lynch.issuetrackerapi.repository.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -24,12 +22,15 @@ public class IssueController {
     private final RepoRepository repoRepository;
     private final UserRepository userRepository;
     private final RepoMemberRepository repoMemberRepository;
+    private final CommentRepository commentRepository;
 
-    public IssueController(IssueRepository issueRepository, RepoRepository repoRepository, UserRepository userRepository, RepoMemberRepository repoMemberRepository) {
+    public IssueController(IssueRepository issueRepository, RepoRepository repoRepository, UserRepository userRepository,
+                           RepoMemberRepository repoMemberRepository, CommentRepository commentRepository) {
         this.issueRepository = issueRepository;
         this.repoRepository = repoRepository;
         this.userRepository = userRepository;
         this.repoMemberRepository = repoMemberRepository;
+        this.commentRepository = commentRepository;
     }
 
     public User getCurrentUser() {
@@ -177,6 +178,10 @@ public class IssueController {
         User user = getCurrentUser();
 
         Issue issue = getAccessibleIssue(issueId, user);
+
+        List<Comment> comments = commentRepository.findByIssueIdAndIssueRepoOwnerEmail(issueId, user.getEmail());
+
+        comments.forEach(commentRepository::delete);
 
         issueRepository.delete(issue);
     }

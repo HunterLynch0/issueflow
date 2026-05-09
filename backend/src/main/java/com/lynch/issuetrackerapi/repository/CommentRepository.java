@@ -10,6 +10,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     List<Comment> findByIssueIdAndIssueRepoOwnerEmail(Long issueId, String email);
 
+    List<Comment> findByIssueId(Long issueId);
+
     Optional<Comment> findByIdAndIssueRepoOwnerEmail(Long commentId, String email);
 
 }
