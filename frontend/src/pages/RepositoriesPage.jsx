@@ -3,6 +3,7 @@ import { apiFetch } from "../api/api";
 
 export default function RepositoriesPage({ onOpenRepo }) {
   const [repos, setRepos] = useState([]);
+  const currentEmail = localStorage.getItem("email") || "";
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -127,7 +128,10 @@ export default function RepositoriesPage({ onOpenRepo }) {
       )}
 
       <div className="card-grid">
-        {repos.map((repo) => (
+        {repos.map((repo) => {
+          const isOwner = repo.owner?.email === currentEmail;
+
+          return (
           <article className="data-card" key={repo.id}>
             {editingId === repo.id ? (
               <div className="form-stack compact">
@@ -162,17 +166,24 @@ export default function RepositoriesPage({ onOpenRepo }) {
                   <button type="button" className="btn btn-primary" onClick={() => onOpenRepo(repo)}>
                     Open issues
                   </button>
-                  <button type="button" className="btn btn-soft" onClick={() => startEdit(repo)}>
-                    Edit
-                  </button>
-                  <button type="button" className="btn btn-danger" onClick={() => deleteRepo(repo)}>
-                    Delete
-                  </button>
+                  {isOwner ? (
+                    <>
+                      <button type="button" className="btn btn-soft" onClick={() => startEdit(repo)}>
+                        Edit
+                      </button>
+                      <button type="button" className="btn btn-danger" onClick={() => deleteRepo(repo)}>
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <span className="inline-meta">Shared with you</span>
+                  )}
                 </div>
               </>
             )}
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

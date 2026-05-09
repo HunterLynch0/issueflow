@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api/api";
 
 export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
   const [repo, setRepo] = useState(null);
   const [issues, setIssues] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [memberEmail, setMemberEmail] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -13,7 +14,28 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
   const [editDescription, setEditDescription] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [memberSaving, setMemberSaving] = useState(false);
   const [error, setError] = useState("");
+  const [memberError, setMemberError] = useState("");
+
+  const currentEmail = localStorage.getItem("email") || "";
+  const isOwner = repo?.owner?.email === currentEmail;
+
+  const repoUsers = useMemo(() => {
+    const byId = new Map();
+
+    if (repo?.owner) {
+      byId.set(repo.owner.id, repo.owner);
+    }
+
+    members.forEach((member) => {
+      if (member.user) {
+        byId.set(member.user.id, member.user);
+      }
+    });
+
+    return Array.from(byId.values());
+  }, [repo, members]);
 
   async function loadPage() {
     try {
@@ -21,15 +43,15 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
       setLoading(true);
 
       const suffix = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : "";
-      const [repoData, issuesData, usersData] = await Promise.all([
+      const [repoData, issuesData, membersData] = await Promise.all([
         apiFetch(`/api/repositories/${repoId}`),
         apiFetch(`/api/repositories/${repoId}/issues${suffix}`),
-        apiFetch("/api/users"),
+        apiFetch(`/api/repositories/${repoId}/members`),
       ]);
 
       setRepo(repoData);
       setIssues(Array.isArray(issuesData) ? issuesData : []);
-      setUsers(Array.isArray(usersData) ? usersData : []);
+      setMembers(Array.isArray(membersData) ? membersData : []);
     } catch (err) {
       setError(err.message || "Could not load issues.");
     } finally {
@@ -59,6 +81,46 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
       setError(err.message || "Could not create issue.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  const addMember = async (event) => {
+    event.preventDefault();
+
+    try {
+      setMemberSaving(true);
+      setMemberError("");
+
+      await apiFetch(`/api/repositories/${repoId}/members`, {
+        method: "POST",
+        body: { email: memberEmail.trim() },
+      });
+
+      setMemberEmail("");
+
+      const updatedMembers = await apiFetch(`/api/repositories/${repoId}/members`);
+
+      setMembers(Array.isArray(updatedMembers) ? updatedMembers : []);
+    } catch (err) {
+      setMemberError(err.message || "Failed to add member");
+    } finally {
+      setMemberSaving(false);
+    }
+  };
+
+  async function removeMember(member) {
+    const username = member.user?.username || member.user?.email || "this member";
+    if (!confirm(`Remove ${username} from this repository?`)) return;
+
+    try {
+      setMemberSaving(true);
+      setMemberError("");
+      await apiFetch(`/api/repositories/${repoId}/members/${member.user.id}`, { method: "DELETE" });
+      await loadPage();
+    } catch (err) {
+      setMemberError(err.message || "Could not remove member.");
+    } finally {
+      setMemberSaving(false);
     }
   }
 
@@ -142,6 +204,66 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
         </label>
       </div>
 
+      <section className="create-card">
+        <div className="create-card-header">
+          <h2>Collaborators</h2>
+          <p>Members can view this repository and work with its issues. Only the owner can add or remove members.</p>
+        </div>
+
+        <div className="member-list">
+          {repo?.owner && (
+            <div className="member-row">
+              <div>
+                <strong>{repo.owner.username || repo.owner.email}</strong>
+                <span>{repo.owner.email}</span>
+              </div>
+              <span className="status-pill open">Owner</span>
+            </div>
+          )}
+
+          {members.map((member) => (
+            <div className="member-row" key={member.id}>
+              <div>
+                <strong>{member.user?.username || member.user?.email || "Unknown user"}</strong>
+                <span>{member.user?.email}</span>
+              </div>
+              {isOwner && (
+                <button
+                  type="button"
+                  className="btn btn-danger-soft btn-small"
+                  disabled={memberSaving}
+                  onClick={() => removeMember(member)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {isOwner && (
+          <>
+            <form className="repo-member-form" onSubmit={addMember}>
+              <label className="field">
+                <span>Add member by email</span>
+                <input
+                  type="email"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  placeholder="person@example.com"
+                />
+              </label>
+
+              <button className="btn btn-primary" disabled={memberSaving || !memberEmail.trim()} type="submit">
+                {memberSaving ? "Adding..." : "Add member"}
+              </button>
+            </form>
+
+            {memberError && <p className="page-alert page-alert-error">{memberError}</p>}
+          </>
+        )}
+      </section>
+
       <form className="create-card" onSubmit={createIssue}>
         <div className="create-card-header">
           <h2>Create issue</h2>
@@ -215,7 +337,7 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
                     <span>Assign</span>
                     <select defaultValue="" onChange={(e) => assignUser(issue.id, e.target.value)}>
                       <option value="">Assign user...</option>
-                      {users.map((user) => (
+                      {repoUsers.map((user) => (
                         <option key={user.id} value={user.id}>
                           {user.username || user.email}
                         </option>

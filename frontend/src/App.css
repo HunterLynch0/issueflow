@@ -741,3 +741,36 @@ p {
     flex: 1 1 140px;
   }
 }
+
+.member-list {
+  display: grid;
+  gap: 10px;
+}
+
+.member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.member-row div {
+  display: grid;
+  gap: 3px;
+}
+
+.member-row span:not(.status-pill) {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.repo-member-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
