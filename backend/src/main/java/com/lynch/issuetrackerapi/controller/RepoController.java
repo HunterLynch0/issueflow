@@ -85,7 +85,7 @@ public class RepoController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Owner is already in the repository");
         }
 
-        if(repo.getOwner().getId().equals(userId)) {
+        if(repoMemberRepository.existsByRepoAndUser(repo, userAdded)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already a member");
         }
 
@@ -94,6 +94,19 @@ public class RepoController {
         member.setUser(userAdded);
 
         return repoMemberRepository.save(member);
+    }
+
+    @DeleteMapping("/{repoId}/members/{userId}")
+    public void removeMember(@PathVariable Long repoId, @PathVariable Long userId) {
+        User user = getCurrentUser();
+
+        Repo repo = getOwnedRepo(repoId, user);
+
+        User userRemoved = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        RepoMember member = repoMemberRepository.findByRepoAndUser(repo, userRemoved).orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+
+        repoMemberRepository.delete(member);
     }
 
     @GetMapping
