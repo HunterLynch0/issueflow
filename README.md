@@ -70,10 +70,6 @@ npm install
 npm run dev
 ```
 
-## Notes
-
-- Half way through the deployment process I realised I was going to have to pay for the web service to support the email verfication so I decided to keep it local as the email verification is a core feature of the app.
-
 ## License
 
 MIT
