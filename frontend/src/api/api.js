@@ -34,7 +34,7 @@ export async function apiFetch(path, options = {}) {
       body: requestBody,
     });
   } catch (error) {
-    throw new Error("Could not reach backend. Make sure Spring Boot is running and CORS allows the frontend.");
+    throw new Error("\"We’re having trouble connecting to IssueFlow right now. Please check your internet connection and try again.\"");
   }
 
   if (response.status === 204) return null;
