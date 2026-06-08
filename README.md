@@ -12,6 +12,8 @@ This project build focused on learning to implement:
 * REST APIs
 * React frontend integration
 * User/repository permissions
+* Role-based access control
+* Deployment of a full-stack web application
 
 ## Tech Stack
 
@@ -42,6 +44,10 @@ This project build focused on learning to implement:
 * Repository access control
 * Protected API endpoints
 * Persistent PostgreSQL database
+* Deployed frontend and backend
+
+## Live Demo
+https://issueflow.site/
 
 ## Running Locally
 
