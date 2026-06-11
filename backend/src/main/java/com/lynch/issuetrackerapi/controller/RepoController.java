@@ -1,6 +1,7 @@
 package com.lynch.issuetrackerapi.controller;
 
 import com.lynch.issuetrackerapi.dto.AddMemberRequest;
+import com.lynch.issuetrackerapi.dto.RepoInvitationResponse;
 import com.lynch.issuetrackerapi.exception.ResourceNotFoundException;
 import com.lynch.issuetrackerapi.model.*;
 import com.lynch.issuetrackerapi.repository.*;
@@ -19,13 +20,17 @@ public class RepoController {
     private final RepoRepository repoRepository;
     private final UserRepository userRepository;
     private final RepoMemberRepository repoMemberRepository;
+    private final RepoInvitationRepository repoInvitationRepository;
     private final IssueRepository issueRepository;
     private final CommentRepository commentRepository;
 
-    public RepoController(RepoRepository repoRepository, UserRepository userRepository, RepoMemberRepository repoMemberRepository, IssueRepository issueRepository, CommentRepository commentRepository) {
+    public RepoController(RepoRepository repoRepository, UserRepository userRepository, RepoMemberRepository repoMemberRepository,
+                          RepoInvitationRepository repoInvitationRepository, IssueRepository issueRepository,
+                          CommentRepository commentRepository) {
         this.repoRepository = repoRepository;
         this.userRepository = userRepository;
         this.repoMemberRepository = repoMemberRepository;
+        this.repoInvitationRepository = repoInvitationRepository;
         this.issueRepository = issueRepository;
         this.commentRepository = commentRepository;
     }
@@ -63,6 +68,20 @@ public class RepoController {
         return repo;
     }
 
+    private RepoInvitationResponse toInvitationResponse(RepoInvitation invitation) {
+        return new RepoInvitationResponse(invitation);
+    }
+
+    private void unassignIssuesForLeavingUser(Repo repo, User user) {
+        List<Issue> assignedIssues = issueRepository.findByRepoAndAssignee(repo, user);
+
+        assignedIssues.forEach(issue -> {
+            // Assignments should only point at users who can access the repository.
+            issue.setAssignee(null);
+            issueRepository.save(issue);
+        });
+    }
+
     @PostMapping
     public Repo createRepository(@RequestBody Repo repo) {
         User owner = getCurrentUser();
@@ -73,8 +92,70 @@ public class RepoController {
         return repoRepository.save(repo);
     }
 
+    @GetMapping("/invitations")
+    public List<RepoInvitationResponse> getPendingInvitations() {
+        User user = getCurrentUser();
+
+        return repoInvitationRepository
+                .findByInvitedUserAndStatusOrderByCreatedAtDesc(user, RepoInvitationStatus.PENDING)
+                .stream()
+                .map(this::toInvitationResponse)
+                .toList();
+    }
+
+    @PatchMapping("/invitations/{invitationId}/accept")
+    public RepoInvitationResponse acceptInvitation(@PathVariable Long invitationId) {
+        User user = getCurrentUser();
+
+        RepoInvitation invitation = repoInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+
+        if (!invitation.getInvitedUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only accept invitations sent to you");
+        }
+
+        if (invitation.getStatus() != RepoInvitationStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation is no longer pending");
+        }
+
+        Repo repo = invitation.getRepo();
+
+        if (!repo.getOwner().getId().equals(user.getId()) && !repoMemberRepository.existsByRepoAndUser(repo, user)) {
+            RepoMember member = new RepoMember();
+            member.setRepo(repo);
+            member.setUser(user);
+            repoMemberRepository.save(member);
+        }
+
+        invitation.setStatus(RepoInvitationStatus.ACCEPTED);
+        invitation.setRespondedAt(LocalDateTime.now());
+
+        return toInvitationResponse(repoInvitationRepository.save(invitation));
+    }
+
+    @PatchMapping("/invitations/{invitationId}/decline")
+    public RepoInvitationResponse declineInvitation(@PathVariable Long invitationId) {
+        User user = getCurrentUser();
+
+        RepoInvitation invitation = repoInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+
+        if (!invitation.getInvitedUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only decline invitations sent to you");
+        }
+
+        if (invitation.getStatus() != RepoInvitationStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation is no longer pending");
+        }
+
+        invitation.setStatus(RepoInvitationStatus.DECLINED);
+        invitation.setRespondedAt(LocalDateTime.now());
+
+        return toInvitationResponse(repoInvitationRepository.save(invitation));
+    }
+
     @PostMapping("/{repoId}/members")
-    public RepoMember addMemberByEmail(@PathVariable Long repoId, @RequestBody AddMemberRequest request) {
+    public RepoInvitationResponse addMemberByEmail(@PathVariable Long repoId, @RequestBody AddMemberRequest request) {
         User user = getCurrentUser();
 
         Repo repo = getOwnedRepo(repoId, user);
@@ -89,11 +170,18 @@ public class RepoController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already a member");
         }
 
-        RepoMember member = new RepoMember();
-        member.setRepo(repo);
-        member.setUser(userAdded);
+        if(repoInvitationRepository.existsByRepoAndInvitedUserAndStatus(repo, userAdded, RepoInvitationStatus.PENDING)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User already has a pending invitation");
+        }
 
-        return repoMemberRepository.save(member);
+        RepoInvitation invitation = new RepoInvitation();
+        invitation.setRepo(repo);
+        invitation.setInvitedUser(userAdded);
+        invitation.setInvitedBy(user);
+        invitation.setStatus(RepoInvitationStatus.PENDING);
+        invitation.setCreatedAt(LocalDateTime.now());
+
+        return toInvitationResponse(repoInvitationRepository.save(invitation));
     }
 
     @DeleteMapping("/{repoId}/members/{userId}")
@@ -105,6 +193,26 @@ public class RepoController {
         User userRemoved = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         RepoMember member = repoMemberRepository.findByRepoAndUser(repo, userRemoved).orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+
+        unassignIssuesForLeavingUser(repo, userRemoved);
+
+        repoMemberRepository.delete(member);
+    }
+
+    @PostMapping("/{repoId}/leave")
+    public void leaveRepository(@PathVariable Long repoId) {
+        User user = getCurrentUser();
+
+        Repo repo = getAccessibleRepo(repoId, user);
+
+        if(repo.getOwner().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Repository owner cannot leave their own repository");
+        }
+
+        RepoMember member = repoMemberRepository.findByRepoAndUser(repo, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+
+        unassignIssuesForLeavingUser(repo, user);
 
         repoMemberRepository.delete(member);
     }
@@ -168,6 +276,10 @@ public class RepoController {
         List<RepoMember> members = repoMemberRepository.findByRepo(repo);
 
         members.forEach(repoMemberRepository::delete);
+
+        List<RepoInvitation> invitations = repoInvitationRepository.findByRepo(repo);
+
+        invitations.forEach(repoInvitationRepository::delete);
 
         repoRepository.delete(repo);
     }

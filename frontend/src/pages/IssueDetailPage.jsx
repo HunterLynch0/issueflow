@@ -34,7 +34,11 @@ export default function IssueDetailPage({ issueId, onBack, onRepoLink }) {
   }
 
   useEffect(() => {
-    loadIssue();
+    const timer = setTimeout(() => {
+      loadIssue();
+    }, 0);
+
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [issueId]);
 

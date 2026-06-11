@@ -34,7 +34,10 @@ export async function apiFetch(path, options = {}) {
       body: requestBody,
     });
   } catch (error) {
-    throw new Error("\"We’re having trouble connecting to IssueFlow right now. Please check your internet connection and try again.\"");
+    throw new Error(
+      "\"We’re having trouble connecting to IssueFlow right now. Please check your internet connection and try again.\"",
+      { cause: error }
+    );
   }
 
   if (response.status === 204) return null;

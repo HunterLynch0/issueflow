@@ -1,6 +1,8 @@
 package com.lynch.issuetrackerapi.repository;
 
 import com.lynch.issuetrackerapi.model.Issue;
+import com.lynch.issuetrackerapi.model.Repo;
+import com.lynch.issuetrackerapi.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -17,4 +19,6 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
     List<Issue> findByRepoId(long id);
 
     List<Issue> findByRepoIdAndStatus(Long repoId, String status);
+
+    List<Issue> findByRepoAndAssignee(Repo repo, User assignee);
 }

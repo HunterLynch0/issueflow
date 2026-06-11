@@ -122,6 +122,8 @@ p {
 
 .app-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .top-bar {
@@ -185,6 +187,119 @@ p {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
   padding: 10px 0 56px;
+  flex: 1;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inbox-wrap {
+  position: relative;
+}
+
+.icon-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #eef2f7;
+  color: #334155;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.icon-button:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.mail-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.inbox-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 10;
+  width: min(360px, calc(100vw - 32px));
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.inbox-header,
+.repo-actions-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.inbox-header span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.inbox-list {
+  display: grid;
+  gap: 10px;
+}
+
+.invitation-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.invitation-card div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.invitation-card span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.compact-empty {
+  padding: 14px;
 }
 
 .auth-page {
@@ -322,6 +437,18 @@ p {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-2);
+}
+
+.repo-actions-panel {
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  background: #fff7f7;
+}
+
+.repo-actions-panel p {
+  margin-top: 4px;
 }
 
 .repo-create-grid {
@@ -648,6 +775,16 @@ p {
   color: var(--success);
 }
 
+.site-footer {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 0 0 24px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+}
+
 .empty-state {
   padding: 22px;
   border: 1px dashed var(--border-strong);
@@ -703,6 +840,11 @@ p {
   .button-row {
     flex-wrap: wrap;
   }
+
+  .repo-actions-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 560px) {
@@ -710,6 +852,21 @@ p {
     width: min(100% - 24px, 1120px);
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .top-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .inbox-wrap {
+    position: static;
+  }
+
+  .inbox-menu {
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
 
   .content-wrap {

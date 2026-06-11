@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../api/api";
 
-export default function RepositoriesPage({ onOpenRepo }) {
+export default function RepositoriesPage({ refreshKey, onOpenRepo }) {
   const [repos, setRepos] = useState([]);
   const currentEmail = localStorage.getItem("email") || "";
   const [name, setName] = useState("");
@@ -27,8 +27,12 @@ export default function RepositoriesPage({ onOpenRepo }) {
   }
 
   useEffect(() => {
-    loadRepos();
-  }, []);
+    const timer = setTimeout(() => {
+      loadRepos();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [refreshKey]);
 
   async function createRepo(event) {
     event.preventDefault();

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api/api";
 
-export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
+export default function IssuesPage({ repoId, onBack, onOpenIssue, onRepoLeft }) {
   const [repo, setRepo] = useState(null);
   const [issues, setIssues] = useState([]);
   const [members, setMembers] = useState([]);
@@ -17,9 +17,11 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
   const [memberSaving, setMemberSaving] = useState(false);
   const [error, setError] = useState("");
   const [memberError, setMemberError] = useState("");
+  const [memberMessage, setMemberMessage] = useState("");
 
   const currentEmail = localStorage.getItem("email") || "";
   const isOwner = repo?.owner?.email === currentEmail;
+  const canLeaveRepo = repo && !isOwner;
 
   const repoUsers = useMemo(() => {
     const byId = new Map();
@@ -60,7 +62,11 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
   }
 
   useEffect(() => {
-    loadPage();
+    const timer = setTimeout(() => {
+      loadPage();
+    }, 0);
+
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoId, statusFilter]);
 
@@ -90,6 +96,7 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
     try {
       setMemberSaving(true);
       setMemberError("");
+      setMemberMessage("");
 
       await apiFetch(`/api/repositories/${repoId}/members`, {
         method: "POST",
@@ -98,11 +105,9 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
 
       setMemberEmail("");
 
-      const updatedMembers = await apiFetch(`/api/repositories/${repoId}/members`);
-
-      setMembers(Array.isArray(updatedMembers) ? updatedMembers : []);
+      setMemberMessage("Invitation sent. The user will appear here after accepting it.");
     } catch (err) {
-      setMemberError(err.message || "Failed to add member");
+      setMemberError(err.message || "Failed to send invitation");
     } finally {
       setMemberSaving(false);
     }
@@ -115,6 +120,7 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
     try {
       setMemberSaving(true);
       setMemberError("");
+      setMemberMessage("");
       await apiFetch(`/api/repositories/${repoId}/members/${member.user.id}`, { method: "DELETE" });
       await loadPage();
     } catch (err) {
@@ -181,6 +187,23 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
     }
   }
 
+  async function leaveRepository() {
+    if (!confirm("Are you sure you want to leave this repository?")) return;
+
+    try {
+      setSaving(true);
+      setError("");
+      await apiFetch(`/api/repositories/${repoId}/leave`, { method: "POST" });
+
+      if (onRepoLeft) onRepoLeft();
+      else onBack();
+    } catch (err) {
+      setError(err.message || "Could not leave repository.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="page-panel">
       <button type="button" className="text-link" onClick={onBack}>
@@ -204,10 +227,24 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
         </label>
       </div>
 
+      {canLeaveRepo && (
+        <div className="repo-actions-panel">
+          <div>
+            <strong>Repository access</strong>
+            <p className="muted">Leaving removes your access and unassigns issues currently assigned to you here.</p>
+          </div>
+          <button type="button" className="btn btn-danger-soft" disabled={saving} onClick={leaveRepository}>
+            Leave Repository
+          </button>
+        </div>
+      )}
+
       <section className="create-card">
         <div className="create-card-header">
           <h2>Collaborators</h2>
-          <p>Members can view this repository and work with its issues. Only the owner can add or remove members.</p>
+          <p>
+            Members can view this repository and work with its issues. Only the owner can invite or remove members.
+          </p>
         </div>
 
         <div className="member-list">
@@ -245,7 +282,7 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
           <>
             <form className="repo-member-form" onSubmit={addMember}>
               <label className="field">
-                <span>Add member by email</span>
+                <span>Invite member by email</span>
                 <input
                   type="email"
                   value={memberEmail}
@@ -255,11 +292,12 @@ export default function IssuesPage({ repoId, onBack, onOpenIssue }) {
               </label>
 
               <button className="btn btn-primary" disabled={memberSaving || !memberEmail.trim()} type="submit">
-                {memberSaving ? "Adding..." : "Add member"}
+                {memberSaving ? "Sending..." : "Send invitation"}
               </button>
             </form>
 
             {memberError && <p className="page-alert page-alert-error">{memberError}</p>}
+            {memberMessage && <p className="page-alert page-alert-success">{memberMessage}</p>}
           </>
         )}
       </section>
