@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch, clearAuth, isLoggedIn } from "./api/api";
 import AuthPage from "./pages/AuthPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import LandingPage from "./pages/LandingPage";
 import RepositoriesPage from "./pages/RepositoriesPage";
 import IssuesPage from "./pages/IssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
@@ -13,7 +14,19 @@ function parseRoute() {
     return { page: "verifyEmail" };
   }
 
-  if (path === "/" || path === "/login" || path === "/repositories") {
+  if (path === "/") {
+    return { page: "landing" };
+  }
+
+  if (path === "/login") {
+    return { page: "login" };
+  }
+
+  if (path === "/register") {
+    return { page: "register" };
+  }
+
+  if (path === "/repositories") {
     return { page: "repositories" };
   }
 
@@ -27,7 +40,7 @@ function parseRoute() {
     return { page: "issueDetail", issueId: Number(issueMatch[1]) };
   }
 
-  return { page: "repositories" };
+  return { page: "landing" };
 }
 
 export default function App() {
@@ -97,7 +110,7 @@ export default function App() {
       loadMe();
       loadInvitations();
 
-      if (window.location.pathname === "/" || window.location.pathname === "/login") {
+      if (window.location.pathname === "/login" || window.location.pathname === "/register") {
         replace("/repositories");
       }
     }, 0);
@@ -141,12 +154,25 @@ export default function App() {
     navigate("/repositories");
   }
 
-  if (!authenticated) {
-    if (route.page === "verifyEmail") {
-      return <VerifyEmailPage onNavigateToLogin={() => navigate("/login")} />;
-    }
+  if (route.page === "landing") {
+    return <LandingPage onNavigate={navigate} />;
+  }
 
-    return <AuthPage onLogin={handleLogin} initialError={appError} />;
+  if (route.page === "verifyEmail") {
+    return <VerifyEmailPage onNavigateToLogin={() => navigate("/login")} />;
+  }
+
+  if (!authenticated) {
+    const initialMode = route.page === "register" ? "register" : "login";
+
+    return (
+      <AuthPage
+        key={initialMode}
+        onLogin={handleLogin}
+        initialMode={initialMode}
+        initialError={initialMode === "login" ? appError : ""}
+      />
+    );
   }
 
   return (
@@ -242,7 +268,7 @@ export default function App() {
       {appError && <div className="page-alert page-alert-error">{appError}</div>}
 
       <main className="content-wrap">
-        {route.page === "repositories" && (
+        {(route.page === "repositories" || route.page === "login" || route.page === "register") && (
           <RepositoriesPage
             refreshKey={repositoriesRefreshKey}
             onOpenRepo={(repo) => navigate(`/repositories/${repo.id}/issues`)}

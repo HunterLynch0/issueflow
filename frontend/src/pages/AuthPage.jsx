@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { apiFetch, saveAuth } from "../api/api";
 
-export default function AuthPage({ onLogin, initialError = "" }) {
-  const [mode, setMode] = useState("login");
+export default function AuthPage({ onLogin, initialMode = "login", initialError = "" }) {
+  const [mode, setMode] = useState(initialMode === "register" ? "register" : "login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
